@@ -1,8 +1,11 @@
 python main.py --input_dir data/Tp --mask_dir data/casia_masks --output_dir outputs/casia_ela
 
 
-python ela_process_tp_au.py --data_dir ../../data --output ../../output
+python ela_process_tp_au.py --data_dir ../../data --output 
 
+python EMF.py --data_dir ../../data --output ../../output
+
+python EMF.py --data_dir ../../data2 --output ../../output2
 
 ela_process with extracting threshold & anomaly_score
 Best Threshold: 0.12077578617699782

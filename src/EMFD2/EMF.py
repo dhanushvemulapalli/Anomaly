@@ -184,6 +184,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", required=True, help="data directory containing TP and AU")
     parser.add_argument("--output", required=True, help="output directory")
+
+    
     args = parser.parse_args()
 
     root = Path(args.data_dir)
