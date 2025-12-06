@@ -12,7 +12,7 @@ from scipy.stats import entropy as scipy_entropy
 # ------------------------------------------------------------
 # ELA Computation
 # ------------------------------------------------------------
-def compute_ela(pil_img, quality=95, scale=30):
+def compute_ela(pil_img, quality=95, scale=15):
     buf = io.BytesIO()
     pil_img.save(buf, format="JPEG", quality=quality)
     buf.seek(0)
