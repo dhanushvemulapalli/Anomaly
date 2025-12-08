@@ -9,10 +9,35 @@ import time
 from skimage.feature import graycomatrix, graycoprops
 from scipy.stats import entropy as scipy_entropy
 
+from scipy import ndimage
+
+def clean_mask(mask, min_area=500):
+    """
+    Remove tiny noisy regions from the binary mask.
+    min_area: minimum number of pixels to keep a region.
+    """
+    # Label connected components
+    labeled, num = ndimage.label(mask)
+    if num == 0:
+        return mask
+
+    sizes = ndimage.sum(mask, labeled, range(1, num+1))
+
+    clean = np.zeros_like(mask, dtype=bool)
+    for i, s in enumerate(sizes, start=1):
+        if s >= min_area:      # keep only big components
+            clean[labeled == i] = True
+
+    # Optional: smooth the result a bit
+    clean = ndimage.binary_opening(clean, iterations=1)
+    clean = ndimage.binary_closing(clean, iterations=1)
+    return clean
+
+
 # ------------------------------------------------------------
 # ELA Computation
 # ------------------------------------------------------------
-def compute_ela(pil_img, quality=95, scale=30):
+def compute_ela(pil_img, quality=95, scale=15):
     buf = io.BytesIO()
     pil_img.save(buf, format="JPEG", quality=quality)
     buf.seek(0)
@@ -70,7 +95,10 @@ def segment(ela_np):
     pil_gray = Image.fromarray((gray*255).astype(np.uint8))
     pil_gray = pil_gray.filter(ImageFilter.MedianFilter(size=3))
     gray = np.asarray(pil_gray).astype(np.float32) / 255.0
+
     t = otsu(gray)
+    # Make threshold slightly more strict
+    t = min(1.0, t + 0.05)   # add 0.05–0.10, tune this
     mask = gray >= t
     return mask, t
 
@@ -142,7 +170,7 @@ def process_folder(folder_path, out_root, label):
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
-    files = sorted(list(folder.glob("*.jpg")) + list(folder.glob("*.png")))
+    files = sorted(list(folder.glob("*.jpg")) + list(folder.glob("*.png"))) + list(folder.glob("*.tif"))
 
     for p in files:
         img = Image.open(p).convert("RGB")
@@ -152,6 +180,7 @@ def process_folder(folder_path, out_root, label):
         ela_img.save(out_dir / f"{base}_ela.png")
 
         mask, t = segment(ela_np)
+        mask = clean_mask(mask, min_area=500)  # tune 300–1000 based on image size
         mask_img = Image.fromarray((mask.astype(np.uint8)*255).astype(np.uint8))
         mask_img.save(out_dir / f"{base}_mask.png")
 
